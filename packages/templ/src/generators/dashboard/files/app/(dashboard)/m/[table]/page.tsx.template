@@ -1,0 +1,87 @@
+"use client"
+import { API } from "<%= name %>/lib/api"
+import { useEffect, useState } from "react";
+import { DialogForm } from "@postweb/html/form"
+import { DataTable, type Table } from "@postweb/html/data-table"
+import { FildColumnDef, columnHelper } from "@postweb/html/form"
+import { Button } from "@postweb/html";
+import { PackagePlus, Shirt, Trash2 } from "lucide-react"
+import { fabricsCF, usersCF } from "./models";
+
+
+export default function Home({ params }: { params: { table: string } }) {
+  let fetcher: () => Promise<any[] | null>
+  let actions, toolbar, filters
+  let colhelper: FildColumnDef
+  const [refresh, setRefresh] = useState<number | undefined>(undefined)
+  const [fabricTypes, setFabricTypes] = useState<any[] | null>(null)
+  const [data, setData] = useState<any[] | null>([]);
+  switch (params.table) {
+    case "products":
+      colhelper = columnHelper(fabricsCF)
+      fetcher = async () => {
+        const { data } = await API.pg.from("fabrics").select('*, item_type(name,id)').order("updated_at", { ascending: false })
+        return data
+      }
+      filters = new Map([["item_type", {
+        options: fabricTypes?.map(f => ({ label: f.name, value: f.id })) || [],
+        icon: Shirt,
+        title: "类型"
+      }]])
+      actions = (table: Table<any>) => [<Button size="sm" key="delete"><Trash2 className="h-4 w-4 mr-1" />delete</Button>]
+      toolbar = (table: Table<any>) => [
+        <DialogForm
+          key="add"
+          title="添加商品"
+          ensure="确 定"
+          cancel="取 消"
+          form={{
+            fields: colhelper.fieldDef,
+            float: true,
+            shouldClose: res => !res.code,
+            submitFnc: async payload => {
+              payload.item_img = { base64: payload.item_img }
+              const { data, error } = await API.pg.from("fabrics").insert(payload)
+              if (data) setRefresh(Date.now())
+            }
+          }} >
+          <Button size="sm"><PackagePlus className="mr-2" />添加商品</Button>
+        </DialogForm>
+      ]
+      break;
+    case "users":
+      colhelper = columnHelper(usersCF)
+      fetcher = async () => {
+        const { data } = await API.pg.from("users").select().order("updated_at", { ascending: false })
+        return data
+      }
+      actions = (table: Table<any>) => [<Button size="sm" key="auth">授权</Button>]
+      break;
+    default:
+      colhelper = columnHelper([])
+      break;
+  }
+
+  useEffect(() => {
+    API.pg.from("fabric_types").select().then(({ data }) => setFabricTypes(data))
+  }, [])
+
+  useEffect(() => {
+    fetcher().then(setData)
+  }, [refresh])
+
+  return (
+    <DataTable
+      className="h-full py-5 pr-5"
+      columns={colhelper.columnDef}
+      data={data || []}
+      filters={filters}
+      actions={actions}
+      toolbar={toolbar}
+      searchFnc={async (txt: string) => {
+        const { data, error } = await API.pg.from("fabrics").select().textSearch("tsv", txt, { config: "chinese" })
+        if (data) setData(data)
+      }}
+    />
+  )
+}

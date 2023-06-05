@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "Dashboard",
+  "title": "",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "What name would you like to use?"
+    },
+    "management": {
+      "type": "string",
+      "description": "chouse a type of app management",
+      "x-prompt": {
+        "message": "Which type of management would you like to use?",
+        "type": "list",
+        "default": "standalone",
+        "items": [
+          {
+            "value": "standalone",
+            "label": "Standalone"
+          },
+          {
+            "value": "nx",
+            "label": "Nx"
+          },
+          {
+            "value": "turborepo",
+            "label": "Turborepo"
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "name",
+    "management"
+  ]
+}

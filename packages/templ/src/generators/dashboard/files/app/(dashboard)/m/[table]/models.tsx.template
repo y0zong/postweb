@@ -1,0 +1,117 @@
+import { z } from "zod";
+import { API } from "<%= name %>/lib/api"
+import { Badge, Button } from "@postweb/html"
+import { toast } from "@postweb/html/toast"
+import { type FieldColumn } from "@postweb/html/form"
+
+export const usersCF: FieldColumn[] = [
+  { name: "name", label: "名字" },
+  { name: "phone", label: "手机号" },
+  { name: "company", label: "公司名称" },
+  {
+    name: "authorized",
+    label: "授权管理",
+    cell({ row, column, getValue }) {
+      const value = getValue()
+      return <>
+        <Badge variant={value ? "secondary" : "destructive"}>
+          {value ? "已授权" : "待授权"}
+        </Badge>
+        {!value && (
+          <Button
+            size="sm"
+            className="ml-4"
+            onClick={async () => API.pg.from("users").update({ authorized: true }).eq("id", value).then(({ data, error }) => {
+              if (data) {
+                // @ts-ignore
+                return table.options.meta?.cellUpdate(
+                  row.index,
+                  column.id,
+                  true,
+                );
+              }
+              toast({
+                title: "服务器错误",
+                description: error?.message,
+                variant: "destructive",
+              })
+            })}
+          >
+            授权
+          </Button>
+        )}
+      </>
+    }
+  }
+]
+
+export const fabricsCF: FieldColumn[] = [
+  {
+    label: "样图",
+    name: "item_img",
+    field: {
+      width: 300,
+      zod: z.any(),
+      type: {
+        ctype: "upload",
+        // uploadFnc: async (file) => {
+        //   const body = new FormData()
+        //   body.append("name", data.name)
+        //   body.append("type", data.type)
+        //   body.append("data", data)
+        //   const {data} = await fetch(`${process.env.NEXT_PUBLIC_API_ENDPORT}/objects`, {
+        //     method: "post",
+        //     headers: {
+        //       "Content-Profile": "storage",
+        //       "Content-Type": "application/octet-stream",
+        //       "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYXV0aGVudGljYXRlZCIsImVtYWlsIjoiZW1haWwiLCJleHAiOjE2ODE1OTgyNzh9.0ve3dS015rX2gpNLkHiU-1dSwtWCnUqUPyQYFn23rpY"
+        //     },
+        //     body: data
+        //   })
+        //   return data
+        // }
+      },
+    },
+    cell({ getValue }) {
+      return <img src={getValue().base64} className="tw-w-12 tw-h-12" alt="" />
+    },
+  },
+  {
+    label: "类型", name: "item_type",
+    field: {
+      width: 300,
+      placeholder: "选择类型",
+      zod: z.number({ required_error: "请选择类型" }),
+      type: {
+        ctype: "select",
+        fetcher: async () => {
+          const { data, error } = await API.pg.from("fabric_types").select()
+          if (data) return data
+          toast({
+            title: "服务器错误",
+            description: error.message,
+            variant: "destructive",
+          })
+          return null
+        },
+        formater: (data: any) => ({ label: data.name, value: data.id })
+      }
+    },
+    cell: ({ getValue }) => getValue().name
+  }, {
+    label: "来样时间", name: "item_sample_avaliable", field: {
+      width: 300,
+      placeholder: "选择时间",
+      zod: z.date({ required_error: "请选择日期" }),
+      type: { ctype: "date" }
+    }
+  },
+  { label: "品名", name: "item_name", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "货号", name: "item_no", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "克重", name: "item_weight", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "来价", name: "item_price", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "厂家", name: "wholesaler", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "厂家货号", name: "wholesaler_item_no", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "厂家克重", name: "wholesaler_item_weight", field: { width: 300, zod: z.string({ required_error: "请输入密码" }) } },
+  { label: "成分", name: "item_composition", field: { width: 600, zod: z.string({ required_error: "请输入密码" }) } }
+]

@@ -1,0 +1,1 @@
+export default function localLoader({ src }: { src: string; }) { return src }

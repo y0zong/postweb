@@ -1,0 +1,9 @@
+{
+  "generators": {
+    "dashboard": {
+      "factory": "./src/generators/dashboard/generator",
+      "schema": "./src/generators/dashboard/schema.json",
+      "description": "dashboard generator"
+    }
+  }
+}

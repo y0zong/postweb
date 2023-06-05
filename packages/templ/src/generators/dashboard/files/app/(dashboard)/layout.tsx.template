@@ -1,0 +1,44 @@
+"use client"
+import cn from "clsx"
+import { API } from "<%= name %>/lib/api"
+import { ModeToggle } from "<%= name %>/lib/theme"
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import {useError} from "@postweb/html/use"
+
+export default function DashboardLayout({
+    children, side, group
+}: {
+    children?: React.ReactNode
+    side: React.ReactNode & NextjsAppRouterProps
+    group: React.ReactNode & NextjsAppRouterProps
+}) {
+    const dispatch = useError();
+    const group_avaliable = group.props.childProp.segment !== "__DEFAULT__"
+    const side_avaliable = side.props.childProp.segment === "__DEFAULT__"
+    const route = useRouter();
+    const [islogin, setLogin] = useState<boolean | undefined>(undefined);
+    useEffect(() => {
+        API.pg?.rpc("status")
+            .then(({ data, error }) => {
+                if (error) dispatch(error)
+                if (data?.user.uid) {
+                    setLogin(true)
+                } else route.replace("/login")
+            })
+    }, [])
+
+    if (islogin === true) {
+        return (
+            <>
+                <section id="logo" className="flex-c"></section>
+                <section id="leading" className="flex-h justify-center px-5">微迅纺织<ModeToggle /></section>
+                <div id={cn(group_avaliable ? "group" : "nogroup")}>{group}</div>
+                <div id={cn(side_avaliable ? "side" : "noside")}>{side}</div>
+                <main>{children}</main>
+            </>
+        )
+    }
+
+    return null
+}

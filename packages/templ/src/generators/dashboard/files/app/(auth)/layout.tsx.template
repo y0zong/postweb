@@ -1,0 +1,15 @@
+import Image from "next/image"
+import topic from "<%= name %>/public/topic.jpg"
+
+export default function AuthLayout({ children }: AuthLayoutProps) {
+  return <>
+    <div id="topic" className="relative">
+      <Image className="object-cover" priority fill={true} src={topic} sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" alt="topic" />
+    </div>
+    <main>{children}</main>
+  </>
+}
+
+interface AuthLayoutProps {
+  children: React.ReactNode
+}
