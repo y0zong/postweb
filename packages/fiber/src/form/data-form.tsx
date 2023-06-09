@@ -16,9 +16,10 @@ import { Combobox, ComboboxProps } from "../combobox"
 import { Form, FormField, FormItemWithLabel } from "../form"
 import { Label } from "../label"
 import * as Popover from "../popover"
-import { Calendar } from "../calendar"
+import { Calendar, PopCalendar } from "../calendar"
 import { Upload } from "../upload"
 import { DataTableColumnHeader } from "../data-table/data-table-column-header"
+import { ItemsSelect, type SelectProps } from "../selection"
 
 export interface Field {
     label?: string
@@ -32,7 +33,7 @@ export interface Field {
         ctype: "date" | "bool" | "select" | "upload",
         des?: string | React.ReactElement,
         uploadFnc?: (file: File) => Promise<string | undefined | null>
-    } & ComboboxProps
+    } & SelectProps
     render?: ({ field, fieldState, formState, }: {
         field: ControllerRenderProps<any, any>;
         fieldState: ControllerFieldState;
@@ -44,6 +45,7 @@ export interface DataFormProps extends React.HTMLAttributes<HTMLFormElement> {
     className?: string
     fields: Field[]
     float?: boolean
+    dsize?: "sm" | "lg"
     submitTxt?: string | React.ReactElement
     submitFnc: (data: any) => Promise<any>
     afterSubmit?: (response: any) => void
@@ -56,7 +58,7 @@ function zodBuilder(fields: Field[]) {
     return z.object(obj)
 }
 
-export function DataForm({ className, fields, submitTxt, float, submitFnc, afterSubmit, ...formProps }: DataFormProps) {
+export function DataForm({ className, fields, submitTxt, float, dsize, submitFnc, afterSubmit, ...formProps }: DataFormProps) {
     const schema = zodBuilder(fields)
     const form = useForm<z.infer<typeof schema>>({ resolver: zodResolver(schema) })
     const [submitting, setSubmitStatus] = React.useState<boolean>(false)
@@ -87,42 +89,20 @@ export function DataForm({ className, fields, submitTxt, float, submitFnc, after
 
                         if (typeof type === "string" || typeof type === "undefined") {
                             return <FormItemWithLabel name={label} className={classn} style={style}>
-                                <Input placeholder={rest.placeholder} type={type} {...field} />
+                                <Input placeholder={rest.placeholder} type={type} dsize={dsize} {...field} />
                             </FormItemWithLabel>
                         } else {
                             const { des, ctype, uploadFnc, ...crest } = type
                             switch (ctype) {
                                 case "date":
                                     return <FormItemWithLabel name={label} className={classn} style={style}>
-                                        <Popover.Root>
-                                            <Popover.Trigger asChild>
-                                                <Button
-                                                    variant={"outline"}
-                                                    className={cn(
-                                                        "w-[240px] pl-3 text-left font-normal",
-                                                        !field.value && "text-muted-foreground"
-                                                    )}
-                                                >
-                                                    {field.value ? (
-                                                        format(field.value, "PPP")
-                                                    ) : (
-                                                        <span>{rest.placeholder}</span>
-                                                    )}
-                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                                </Button>
-                                            </Popover.Trigger>
-                                            <Popover.Content className="w-auto p-0" align="start">
-                                                <Calendar
-                                                    mode="single"
-                                                    selected={field.value}
-                                                    onSelect={field.onChange}
-                                                    disabled={(date: any) =>
-                                                        date > new Date() || date < new Date("1900-01-01")
-                                                    }
-                                                    initialFocus
-                                                />
-                                            </Popover.Content>
-                                        </Popover.Root>
+                                        <PopCalendar
+                                            mode="single"
+                                            fixedWeeks
+                                            showOutsideDays
+                                            selected={field.value}
+                                            onSelect={field.onChange}
+                                        />
                                     </FormItemWithLabel>
                                 case "bool":
                                     return <FormItemWithLabel name={label} className={classn} style={style}>
@@ -133,7 +113,13 @@ export function DataForm({ className, fields, submitTxt, float, submitFnc, after
                                     </FormItemWithLabel>
                                 case "select":
                                     return <FormItemWithLabel name={label} className={classn} style={style}>
-                                        <Combobox {...crest} onChange={field.onChange}>{rest.placeholder}</Combobox>
+                                        <ItemsSelect
+                                            name={label}
+                                            placeholder={rest.placeholder}
+                                            defaultValue={field.value}
+                                            {...crest}
+                                            onValueChange={field.onChange}
+                                        />
                                     </FormItemWithLabel>
                                 case "upload":
                                 default:
@@ -145,7 +131,7 @@ export function DataForm({ className, fields, submitTxt, float, submitFnc, after
                     }}
                 />
                 )}
-                {submitTxt && <Button className="w-full" type="submit">
+                {submitTxt && <Button className="w-full" size={dsize} intent="primary" type="submit">
                     {submitting ? <Loading /> : submitTxt}
                 </Button>}
             </form>
